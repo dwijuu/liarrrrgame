@@ -13,6 +13,7 @@ export function useSocketEvents() {
     const socket = connectSocket();
 
     socket.on('connect', () => {
+      // 연결 성공 즉시 connected = true
       storeRef.current.setConnected(true);
 
       // 재연결 시 세션 복구
@@ -26,6 +27,7 @@ export function useSocketEvents() {
           if (!res.error) {
             localStorage.setItem('liar_session_id', res.sessionId);
             storeRef.current.setUser(res);
+            storeRef.current.setConnected(true); // 재확인
             if (res.roomId) {
               storeRef.current.setPage('room');
             } else if (storeRef.current.page === 'profile') {
@@ -37,16 +39,20 @@ export function useSocketEvents() {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
+      console.log('[소켓 끊김]', reason);
       storeRef.current.setConnected(false);
     });
 
     socket.on('reconnect', () => {
       toast('서버에 재연결되었습니다.', { icon: '✅' });
+      storeRef.current.setConnected(true);
     });
 
-    socket.on('connect_error', () => {
-      // 조용하게 재시도
+    socket.on('connect_error', (err) => {
+      console.log('[연결 오류]', err.message);
+      // connected는 disconnect 이벤트에서만 false로 바꿈
+      // connect_error 자체는 재시도 중이므로 false로 바꾸지 않음
     });
 
     // ── 방 이벤트 ────────────────────────────────────────────────────
@@ -106,7 +112,6 @@ export function useSocketEvents() {
     socket.on('game:started', (data: { state: string; players: Player[]; speakingOrder: string[] }) => {
       storeRef.current.updateRoom({ state: data.state as any });
       storeRef.current.setGameResult(null);
-      // 초기 game 객체 세팅
       storeRef.current.updateRoom({
         game: {
           state: data.state as any,
@@ -115,6 +120,7 @@ export function useSocketEvents() {
           speeches: [],
           voteEndTime: undefined,
           speakEndTime: undefined,
+          discussionEndTime: undefined,
           revoteCount: 0,
           hasVoted: false,
           myVote: undefined,
@@ -122,46 +128,31 @@ export function useSocketEvents() {
           accusedLiars: [],
           guess: null,
           result: null,
+          extendVoteActive: false,
+          myExtendVote: undefined,
+          extendVoteCount: 0,
         },
       });
     });
 
     socket.on('game:secret', (info: SecretInfo) => {
       storeRef.current.setSecretInfo(info);
-      if (info.isLiar) {
-        if (storeRef.current.room?.gameMode === 'FOOL' && info.word) {
-          toast(`🎭 당신은 라이어! 내 단어: ${info.word}`, {
-            duration: 5000,
-            style: { background: '#7c3aed', color: '#fff' },
-          });
-        } else {
-          toast('🎭 당신은 라이어입니다! 시민의 발언을 보고 추측하세요.', {
-            duration: 5000,
-            style: { background: '#7c3aed', color: '#fff' },
-          });
-        }
-      } else {
-        toast(`✅ 시민입니다! 제시어: "${info.word}"`, {
-          duration: 5000,
-          style: { background: '#059669', color: '#fff' },
-        });
-      }
+      // 제시어 정보는 좌측 패널에서 항상 보이므로 toast 알림 제거
     });
 
     socket.on('game:phase_change', (data: Partial<GameState_Public> & { state: any }) => {
       const currentRoom = storeRef.current.room;
       storeRef.current.updateRoom({ state: data.state });
       if (currentRoom) {
-        // 기존 game 상태에 새 데이터를 병합
         const currentGame = currentRoom.game || {} as GameState_Public;
         storeRef.current.updateRoom({
           game: {
             ...currentGame,
             ...data,
+            extendVoteActive: (data as any).extendVoteActive ?? false,
           } as GameState_Public,
         });
       }
-      // 게임 화면으로 전환
       const newState = data.state;
       if (newState !== 'LOBBY') {
         storeRef.current.setPage('game');
@@ -202,6 +193,8 @@ export function useSocketEvents() {
       result: string;
       accusedId?: string;
       accusedNickname?: string;
+      accusedAvatar?: string;
+      accusedColor?: string;
       isLiar?: boolean;
       tally?: Record<string, number>;
       revoteCount?: number;
@@ -216,15 +209,20 @@ export function useSocketEvents() {
             accusedLiars: [...(currentGame.accusedLiars || []), data.accusedId],
           },
         });
-        if (data.isLiar) {
-          toast(`🎯 ${data.accusedNickname}이(가) 지목되었습니다! 라이어였습니다!`, { duration: 4000 });
-        } else {
-          toast(`😮 ${data.accusedNickname}이(가) 지목되었지만 시민이었습니다!`, { duration: 4000 });
-        }
       } else if (data.result === 'tie') {
         toast('🤝 투표 동률! ' + (data.revoteCount ? '재투표 시작...' : '라이어 승리'), { duration: 4000 });
       } else if (data.result === 'no_votes') {
         toast('📭 유효한 투표가 없습니다. 라이어 승리!', { duration: 4000 });
+      }
+      // 지목 모달은 GamePage 내부에서 처리
+    });
+
+    socket.on('game:extend_vote_cast', (data: { userId: string; choice: string; extendVoteCount: number; totalPlayers: number }) => {
+      const currentGame = storeRef.current.room?.game;
+      if (currentGame) {
+        storeRef.current.updateRoom({
+          game: { ...currentGame, extendVoteCount: data.extendVoteCount },
+        });
       }
     });
 
@@ -232,9 +230,9 @@ export function useSocketEvents() {
       storeRef.current.setGameResult(result);
       storeRef.current.updateRoom({ state: 'GAME_RESULT' });
       if (result.winner === 'liar') {
-        toast('🎭 라이어 승리!', { icon: '🏆', duration: 4000, style: { background: '#7c3aed', color: '#fff' } });
+        toast('🎭 라이어 승리!', { icon: '🏆', duration: 5000, style: { background: '#7c3aed', color: '#fff' } });
       } else {
-        toast('✅ 시민 승리!', { icon: '🏆', duration: 4000, style: { background: '#059669', color: '#fff' } });
+        toast('✅ 시민 승리!', { icon: '🏆', duration: 5000, style: { background: '#059669', color: '#fff' } });
       }
     });
 
@@ -278,6 +276,7 @@ export function useSocketEvents() {
       socket.off('game:speaker_changed');
       socket.off('game:vote_cast');
       socket.off('game:vote_result');
+      socket.off('game:extend_vote_cast');
       socket.off('game:result');
       socket.off('game:reset');
       socket.off('lobby:room_added');

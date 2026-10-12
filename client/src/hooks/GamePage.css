@@ -1,0 +1,900 @@
+.game-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── 헤더 ── */
+.game-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.game-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.game-room-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-state-badge {
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.state-speaking, .state-discussion { background: rgba(34,197,94,0.2); color: #4ade80; }
+.state-voting { background: rgba(239,68,68,0.2); color: #f87171; }
+.state-role_assignment { background: rgba(99,102,241,0.2); color: var(--accent-light); }
+.state-guessing { background: rgba(234,179,8,0.2); color: #fbbf24; }
+.state-vote_result { background: rgba(234,179,8,0.2); color: #fbbf24; }
+.state-game_result { background: rgba(100,116,139,0.2); color: var(--text-muted); }
+
+.game-header-center { display: flex; align-items: center; }
+.game-header-right { flex-shrink: 0; }
+
+/* ── 레이아웃: 좌측 패널 + 중앙 메인 ── */
+.game-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ── 참가자 패널 ── */
+.game-players-panel {
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 12px;
+  gap: 6px;
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.game-player-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card2);
+  border: 1px solid transparent;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.game-player-item.me { border-color: rgba(99,102,241,0.4); }
+.game-player-item.speaking { border-color: var(--success); background: rgba(34,197,94,0.08); }
+.game-player-item.accused { border-color: var(--danger); background: rgba(239,68,68,0.08); }
+
+.game-player-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.speaking-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background: var(--success);
+  border-radius: 50%;
+  border: 2px solid var(--bg-card);
+  animation: pulse 1s infinite;
+}
+
+.game-player-info { flex: 1; min-width: 0; }
+.game-player-name {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-player-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+/* ── 제시어 패널 ── */
+.word-panel {
+  margin-top: auto;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  flex-shrink: 0;
+}
+
+.word-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.word-reveal {
+  text-align: center;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+}
+
+.word-reveal.citizen { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); }
+.word-reveal.liar { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+
+.word-role { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.word-text { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+.word-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+.word-loading { font-size: 13px; color: var(--text-muted); text-align: center; }
+
+/* ── 게임 메인 ── */
+.game-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-dark);
+  padding: 16px;
+  gap: 12px;
+}
+
+.game-phase-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 역할 배정 */
+.phase-icon { font-size: 48px; text-align: center; }
+.game-phase-content h2 { text-align: center; font-size: 22px; }
+.game-phase-content p { text-align: center; color: var(--text-muted); }
+
+.role-reveal {
+  padding: 20px;
+  border-radius: var(--radius);
+  text-align: center;
+}
+.role-reveal.citizen { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); }
+.role-reveal.liar { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); }
+.role-icon { font-size: 36px; margin-bottom: 8px; }
+.role-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.role-word { font-size: 16px; margin-bottom: 6px; }
+.role-desc { font-size: 13px; color: var(--text-muted); }
+
+/* 발언 영역 */
+.speeches-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.speech-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: slideIn 0.2s ease;
+}
+
+.speech-item.mine { flex-direction: row-reverse; }
+
+.speech-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.speech-content { max-width: 75%; }
+.speech-name { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
+.speech-item.mine .speech-name { text-align: right; }
+
+.speech-text {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.speech-item.mine .speech-text {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.speech-text.timed-out {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* 발언자 표시 */
+.speaker-indicator {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+
+.my-turn-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--success);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.turn-timer {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.turn-timer.urgent { color: var(--danger); animation: pulse 1s infinite; }
+.waiting-turn { color: var(--text-muted); font-size: 14px; }
+
+.speak-input-area {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 토론 */
+.discussion-header { flex-shrink: 0; }
+.discussion-header h3 { font-size: 18px; margin-bottom: 4px; }
+.discussion-header p { font-size: 13px; color: var(--text-muted); }
+
+.discussion-timer {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--warning);
+  margin-top: 6px;
+}
+.discussion-timer.urgent { color: var(--danger); animation: pulse 1s infinite; }
+
+/* 연장 투표 */
+.extend-vote-box {
+  background: var(--bg-card);
+  border: 2px solid var(--warning);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.extend-vote-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--warning);
+  text-align: center;
+}
+
+.extend-vote-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.extend-timer {
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.extend-vote-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.extend-vote-done {
+  text-align: center;
+  font-size: 14px;
+  color: var(--success);
+  padding: 8px;
+}
+
+.extend-vote-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* 통합 채팅 */
+.unified-chat-input {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  min-height: 100px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  overflow: hidden;
+}
+
+.chat-messages-unified {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-messages-game {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 채팅 메시지 */
+.chat-msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  animation: slideIn 0.15s ease;
+}
+
+.chat-msg.system { justify-content: center; }
+.chat-msg.mine { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.msg-content { display: flex; flex-direction: column; max-width: 78%; }
+.msg-name { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+.chat-msg.mine .msg-name { text-align: right; }
+
+.msg-text {
+  font-size: 13px;
+  background: var(--bg-card2);
+  border-radius: 10px;
+  padding: 6px 10px;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.chat-msg.mine .msg-text { background: var(--accent); }
+.system-msg { font-size: 12px; color: var(--text-muted); text-align: center; padding: 2px 0; }
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-input-row .input {
+  font-size: 15px;
+  padding: 10px 14px;
+  min-height: 44px;
+  -webkit-appearance: none;
+}
+
+.chat-input-row .btn {
+  min-width: 60px;
+  min-height: 44px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* 투표 */
+.vote-header { flex-shrink: 0; }
+.vote-header h3 { font-size: 20px; margin-bottom: 6px; }
+.vote-header p { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.vote-timer {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--warning);
+  margin-bottom: 6px;
+}
+.vote-timer.urgent { color: var(--danger); animation: pulse 1s infinite; }
+.vote-progress { font-size: 13px; color: var(--text-muted); }
+
+.vote-candidates {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vote-candidate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  /* 모바일 탭 최적화 */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 90px;
+}
+
+.vote-candidate:hover,
+.vote-candidate:active { border-color: var(--accent-light); }
+.vote-candidate.selected {
+  border-color: var(--danger);
+  background: rgba(239,68,68,0.1);
+}
+.vote-candidate.self {
+  border-color: rgba(99,102,241,0.3);
+}
+
+.candidate-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.candidate-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.vote-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: var(--danger);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.vote-done {
+  text-align: center;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.done-icon { font-size: 48px; }
+
+/* 투표 결과 - 크게 */
+.vote-result-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.vote-result-big h3 { font-size: 24px; }
+
+.accused-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.accused-avatar-big {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  border: 4px solid var(--danger);
+  animation: pulse 1s infinite;
+}
+
+.accused-name-big {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.accused-label {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+/* 추측 */
+.guessing-phase { display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center; }
+.guessing-phase h3 { font-size: 22px; }
+.guess-input-area { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; }
+.guess-submitted { background: var(--bg-card); border: 1px solid var(--border); padding: 16px; border-radius: var(--radius); }
+.loading-dots { font-size: 28px; animation: pulse 1s infinite; }
+
+/* ── 게임 결과 ── */
+.game-result {
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.game-result.liar-wins { border-top: 4px solid var(--danger); }
+.game-result.citizen-wins { border-top: 4px solid var(--success); }
+
+.result-winner-banner {
+  font-size: 36px;
+  font-weight: 800;
+  text-align: center;
+  padding: 10px;
+  animation: fadeIn 0.5s ease;
+}
+
+.game-result.liar-wins .result-winner-banner { color: #f87171; }
+.game-result.citizen-wins .result-winner-banner { color: #4ade80; }
+
+.result-reason { text-align: center; color: var(--text-muted); font-size: 16px; }
+
+/* 제시어 크게 */
+.result-words-big {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result-word-box {
+  flex: 1;
+  min-width: 140px;
+  padding: 16px;
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.result-word-box.citizen-word {
+  background: rgba(34,197,94,0.1);
+  border: 2px solid rgba(34,197,94,0.4);
+}
+
+.result-word-box.liar-word {
+  background: rgba(239,68,68,0.1);
+  border: 2px solid rgba(239,68,68,0.4);
+}
+
+.result-word-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.result-word-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.result-guess-box {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 15px;
+}
+
+.result-guess-box strong.correct { color: var(--success); font-size: 18px; }
+.result-guess-box strong.wrong { color: var(--danger); font-size: 18px; }
+
+/* 라이어 명단 크게 */
+.result-liars-big {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.result-liar-item-big {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: var(--radius-sm);
+}
+
+.result-liar-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 투표 현황 크게 */
+.result-votes-big { display: flex; flex-direction: column; gap: 8px; }
+
+.vote-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.vote-bar-item span:first-child { width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.vote-bar-item span:last-child { width: 36px; text-align: right; color: var(--text-muted); font-weight: 600; }
+
+.vote-bar {
+  flex: 1;
+  height: 12px;
+  background: var(--bg-card2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.vote-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 6px;
+  transition: width 0.6s ease;
+}
+
+.result-actions { display: flex; flex-direction: column; gap: 8px; }
+
+/* ── 지목 모달 ── */
+.accused-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+  padding: 20px;
+}
+
+.accused-modal {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 360px;
+  width: 100%;
+  border: 2px solid var(--border);
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.accused-modal-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.accused-modal-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  border: 4px solid var(--danger);
+}
+
+.accused-modal-name {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.accused-modal-result {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 100px;
+}
+
+.accused-modal-result.is-liar {
+  background: rgba(239,68,68,0.15);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.4);
+}
+
+.accused-modal-result.not-liar {
+  background: rgba(34,197,94,0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34,197,94,0.4);
+}
+
+.accused-modal-tally {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tally-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-card2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.accused-modal-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── 타이머 ── */
+.timer {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--warning);
+  padding: 4px 12px;
+  background: rgba(234,179,8,0.1);
+  border-radius: 100px;
+}
+.timer.urgent { color: var(--danger); animation: pulse 1s infinite; }
+
+/* ── 반응형 ── */
+@media (max-width: 768px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .game-players-panel {
+    display: none;
+  }
+
+  .game-main {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .game-header {
+    padding: 8px 12px;
+  }
+
+  .game-room-name { display: none; }
+
+  /* 모바일: 채팅 입력 영역 키보드에 밀리지 않도록 */
+  .unified-chat-input {
+    max-height: 200px;
+  }
+
+  .chat-input-row .input {
+    font-size: 16px; /* iOS 줌 방지 */
+  }
+
+  .vote-candidates {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .vote-candidate {
+    padding: 14px 8px;
+    min-height: 80px;
+  }
+
+  .candidate-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .result-winner-banner { font-size: 28px; }
+  .result-word-value { font-size: 22px; }
+  .result-liar-name { font-size: 18px; }
+
+  .extend-vote-btns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .result-words-big {
+    flex-direction: column;
+  }
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
