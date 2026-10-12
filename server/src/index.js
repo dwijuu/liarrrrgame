@@ -11,16 +11,32 @@ const server = http.createServer(app);
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const PORT = process.env.PORT || 3001;
 
-// CORS 설정
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+// CORS 설정 (로컬 및 Render 배포 주소 모두 허용)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://liarrrrgame-1.onrender.com',
+  CLIENT_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // 모바일 앱이나 Postman 등 origin이 없는 경우 또는 허용된 origin
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // 배포 편의상 허용
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const io = new Server(server, {
-  cors: {
-    origin: CLIENT_URL,
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
+  cors: corsOptions,
   pingTimeout: 20000,
   pingInterval: 10000,
 });
