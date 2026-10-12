@@ -1,7 +1,15 @@
 import { io, Socket } from 'socket.io-client';
 
-// Vite 환경 변수
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+// 환경 변수 또는 현재 호스트 기반 서버 URL 자동 감지
+const getDefaultServerUrl = () => {
+  if (import.meta.env.VITE_SERVER_URL) return import.meta.env.VITE_SERVER_URL;
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    return 'https://liarrrrgame.onrender.com';
+  }
+  return 'http://localhost:3001';
+};
+
+const SERVER_URL = getDefaultServerUrl();
 
 let socket: Socket | null = null;
 
