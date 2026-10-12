@@ -61,6 +61,7 @@ function createRoom(hostUser, settings) {
     liarCount: settings.liarCount || 1,
     voteTimeLimit: settings.voteTimeLimit || 60,
     speakTimeLimit: settings.speakTimeLimit || 30,
+    discussionTimeLimit: settings.discussionTimeLimit || 120, // 토론 시간(초)
     tieRule: settings.tieRule || TieRule.LIAR_WINS,
     maxRevotes: settings.maxRevotes || 1,
     minPlayers: settings.minPlayers || 3,
@@ -137,6 +138,7 @@ function getRoomForPlayer(room, userId) {
     liarCount: room.liarCount,
     voteTimeLimit: room.voteTimeLimit,
     speakTimeLimit: room.speakTimeLimit,
+    discussionTimeLimit: room.discussionTimeLimit,
     tieRule: room.tieRule,
     maxRevotes: room.maxRevotes,
     minPlayers: room.minPlayers,
@@ -184,6 +186,7 @@ function startGame(room) {
     if (!room.customWords || room.customWords.length === 0) {
       throw new Error('커스텀 제시어가 없습니다.');
     }
+    // 커스텀 단어 중 랜덤 선택
     citizenWord = room.customWords[Math.floor(Math.random() * room.customWords.length)];
   } else {
     citizenWord = getRandomWord(room.topic);
@@ -195,9 +198,20 @@ function startGame(room) {
 
   // 바보 모드: 라이어 단어 선택
   if (room.gameMode === GameMode.FOOL) {
-    liarWord = getFoolModeWordPair(citizenWord);
-    if (!liarWord) {
-      throw new Error('바보 모드에 적합한 연관 단어 쌍이 없습니다. 다른 주제를 선택해주세요.');
+    if (room.topic === '커스텀') {
+      // 커스텀 바보 모드: 시민 단어와 다른 단어를 목록에서 랜덤 선택
+      const otherWords = room.customWords.filter(w => w !== citizenWord);
+      if (otherWords.length > 0) {
+        liarWord = otherWords[Math.floor(Math.random() * otherWords.length)];
+      } else {
+        // 단어가 1개뿐이면 같은 단어 사용 (또는 에러)
+        liarWord = citizenWord;
+      }
+    } else {
+      liarWord = getFoolModeWordPair(citizenWord);
+      if (!liarWord) {
+        throw new Error('바보 모드에 적합한 연관 단어 쌍이 없습니다. 다른 주제를 선택해주세요.');
+      }
     }
   }
 
@@ -220,11 +234,15 @@ function startGame(room) {
     votes: new Map(),           // voterId -> targetId
     voteEndTime: null,
     speakEndTime: null,
+    discussionEndTime: null,    // 토론 종료 시각
     revoteCount: 0,
     accusedLiars: [],           // 지목된 라이어들 (복수)
     guess: null,                // 라이어의 마지막 추측
     result: null,               // { winner, accusedUserId, guessWord }
     startedAt: Date.now(),
+    // 토론 연장 투표
+    extendVotes: new Map(),     // userId -> 'extend' | 'vote'
+    extendVoteActive: false,
   };
 
   room.state = GameState.ROLE_ASSIGNMENT;
@@ -244,6 +262,7 @@ function getGamePublicState(room, userId) {
     speeches: game.speeches,
     voteEndTime: game.voteEndTime,
     speakEndTime: game.speakEndTime,
+    discussionEndTime: game.discussionEndTime,
     revoteCount: game.revoteCount,
     hasVoted: game.votes.has(userId),
     myVote: game.votes.get(userId),
@@ -251,6 +270,9 @@ function getGamePublicState(room, userId) {
     accusedLiars: game.accusedLiars,
     guess: game.guess,
     result: game.result,
+    extendVoteActive: game.extendVoteActive,
+    myExtendVote: game.extendVotes.get(userId),
+    extendVoteCount: game.extendVotes.size,
     // 게임 결과에서만 공개
     ...(room.state === GameState.GAME_RESULT || room.state === GameState.FINISHED ? {
       allLiars: [...game.liars],
@@ -295,9 +317,7 @@ function castVote(room, voterId, targetId) {
   if (game.votes.has(voterId)) {
     throw new Error('이미 투표했습니다.');
   }
-  if (voterId === targetId) {
-    throw new Error('자신에게 투표할 수 없습니다.');
-  }
+  // 자신에게 투표 허용 (제한 제거)
   const activePlayers = room.players.filter(p => p.connected);
   const targetExists = activePlayers.some(p => p.userId === targetId);
   if (!targetExists) {
@@ -344,6 +364,35 @@ function tallyVotes(room) {
     isLiar,
     tally: Object.fromEntries(tally),
   };
+}
+
+// 토론 연장 투표
+function castExtendVote(room, userId, choice) {
+  const game = room.game;
+  if (!game || !game.extendVoteActive) {
+    throw new Error('연장 투표 중이 아닙니다.');
+  }
+  game.extendVotes.set(userId, choice); // 'extend' | 'vote'
+
+  const activePlayers = room.players.filter(p => p.connected);
+  const totalPlayers = activePlayers.length;
+
+  // 모두 투표했는지 확인
+  if (game.extendVotes.size >= totalPlayers) {
+    return { allVoted: true };
+  }
+  return { allVoted: false };
+}
+
+function tallyExtendVotes(room) {
+  const game = room.game;
+  let extendCount = 0;
+  let voteCount = 0;
+  for (const [, choice] of game.extendVotes) {
+    if (choice === 'extend') extendCount++;
+    else voteCount++;
+  }
+  return { extendCount, voteCount, extend: extendCount > voteCount };
 }
 
 function processLiarGuess(room, guess) {
@@ -408,7 +457,7 @@ function joinRoom(room, user, password) {
 
 function leaveRoom(room, userId) {
   const playerIndex = room.players.findIndex(p => p.userId === userId);
-  if (playerIndex === -1) return;
+  if (playerIndex === -1) return {};
 
   const wasHost = room.players[playerIndex].userId === room.hostId;
   room.players[playerIndex].connected = false;
@@ -447,7 +496,8 @@ function updateRoomSettings(room, userId, settings) {
   }
 
   const allowedFields = ['name', 'password', 'gameMode', 'speakingMode', 'topic',
-    'liarCount', 'voteTimeLimit', 'speakTimeLimit', 'tieRule', 'maxRevotes', 'minPlayers', 'customWords'];
+    'liarCount', 'voteTimeLimit', 'speakTimeLimit', 'discussionTimeLimit',
+    'tieRule', 'maxRevotes', 'minPlayers', 'customWords'];
 
   for (const field of allowedFields) {
     if (settings[field] !== undefined) {
@@ -488,7 +538,7 @@ module.exports = {
   createUser, getUserBySocket, getUserBySession, removeUser,
   createRoom, getRoomList, getRoomPublicInfo, getRoomForPlayer,
   startGame, getGamePublicState, getSecretInfo,
-  castVote, tallyVotes, processLiarGuess,
+  castVote, tallyVotes, castExtendVote, tallyExtendVotes, processLiarGuess,
   getRoom, deleteRoom, joinRoom, leaveRoom, rejoinRoom,
   updateRoomSettings, resetGame, addMessage,
 };

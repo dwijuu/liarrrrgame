@@ -2,7 +2,7 @@ const {
   getUserBySocket, createUser, removeUser,
   createRoom, getRoomList, getRoomPublicInfo, getRoomForPlayer,
   startGame, getSecretInfo,
-  castVote, tallyVotes, processLiarGuess,
+  castVote, tallyVotes, castExtendVote, tallyExtendVotes, processLiarGuess,
   getRoom, deleteRoom, joinRoom, leaveRoom, rejoinRoom,
   updateRoomSettings, resetGame, addMessage,
   users, userSessions,
@@ -11,7 +11,7 @@ const { GameState, GameMode, SpeakingMode } = require('./gameConstants');
 
 const activeTimers = new Map(); // key -> timerId
 
-// ── io 인스턴스 캐싱 (투표 시작 외부 노출용) ──────────────────────
+// ── io 인스턴스 캐싱 ──────────────────────
 let _ioInstance = null;
 const pendingVoteStart = new Map(); // roomId -> true (중복 방지)
 
@@ -188,6 +188,7 @@ function setupSocketHandlers(io) {
         io.to(user.roomId).emit('room:settings_updated', {
           gameMode: room.gameMode, speakingMode: room.speakingMode, topic: room.topic,
           liarCount: room.liarCount, voteTimeLimit: room.voteTimeLimit, speakTimeLimit: room.speakTimeLimit,
+          discussionTimeLimit: room.discussionTimeLimit,
           tieRule: room.tieRule, maxRevotes: room.maxRevotes, minPlayers: room.minPlayers,
           customWords: room.customWords, name: room.name, isPrivate: room.isPrivate,
         });
@@ -205,6 +206,12 @@ function setupSocketHandlers(io) {
         if (!room) return cb({ error: '방을 찾을 수 없습니다.' });
         if (room.hostId !== user.userId) return cb({ error: '방장만 게임을 시작할 수 있습니다.' });
         if (room.state !== GameState.LOBBY) return cb({ error: '이미 게임이 진행 중입니다.' });
+
+        // 오프라인 플레이어 재확인: 연결된 플레이어가 minPlayers 이상인지 서버에서 다시 검증
+        const connectedPlayers = room.players.filter(p => p.connected);
+        if (connectedPlayers.length < room.minPlayers) {
+          return cb({ error: `최소 ${room.minPlayers}명의 접속된 플레이어가 필요합니다. 현재 ${connectedPlayers.length}명 접속 중.` });
+        }
 
         startGame(room);
         broadcastSecretInfo(io, room);
@@ -294,19 +301,27 @@ function setupSocketHandlers(io) {
       } catch (e) { cb({ error: e.message }); }
     });
 
-    // ── 투표 시작 (방장) ───────────────────────────────────────────────
-    socket.on('game:start_voting', (_, cb) => {
+    // ── 토론 연장 투표 ─────────────────────────────────────────────────
+    socket.on('game:extend_vote', ({ choice }, cb) => {
       try {
         const user = getUserBySocket(socket.id);
         if (!user || !user.roomId) return cb({ error: '방에 없습니다.' });
         const room = getRoom(user.roomId);
-        if (!room) return cb({ error: '방을 찾을 수 없습니다.' });
-        if (room.hostId !== user.userId) return cb({ error: '방장만 투표를 시작할 수 있습니다.' });
-        if (room.state !== GameState.DISCUSSION && room.state !== GameState.SPEAKING) {
-          return cb({ error: '토론/발언 단계가 아닙니다.' });
+        if (!room || !room.game) return cb({ error: '게임이 없습니다.' });
+        if (!room.game.extendVoteActive) return cb({ error: '연장 투표 중이 아닙니다.' });
+        if (!['extend', 'vote'].includes(choice)) return cb({ error: '잘못된 선택입니다.' });
+
+        const { allVoted } = castExtendVote(room, user.userId, choice);
+        io.to(user.roomId).emit('game:extend_vote_cast', {
+          userId: user.userId,
+          choice,
+          extendVoteCount: room.game.extendVotes.size,
+          totalPlayers: room.players.filter(p => p.connected).length,
+        });
+
+        if (allVoted) {
+          resolveExtendVote(io, room);
         }
-        clearTimer(user.roomId + '_speak');
-        transitionToVoting(io, room);
         cb({ ok: true });
       } catch (e) { cb({ error: e.message }); }
     });
@@ -368,6 +383,7 @@ function setupSocketHandlers(io) {
           accusedLiars: room.game.accusedLiars,
           votes: Object.fromEntries(room.game.votes),
           speeches: room.game.speeches,
+          players: room.players.map(p => ({ userId: p.userId, nickname: p.nickname, avatar: p.avatar, color: p.color })),
         });
         io.to('lobby').emit('lobby:room_updated', getRoomPublicInfo(room));
         cb({ ok: true });
@@ -440,6 +456,10 @@ function transitionToSpeaking(io, room) {
 
 function transitionToDiscussion(io, room) {
   room.state = GameState.DISCUSSION;
+  const discussionTimeLimit = room.discussionTimeLimit || 120;
+  const discussionEndTime = Date.now() + discussionTimeLimit * 1000;
+  room.game.discussionEndTime = discussionEndTime;
+
   io.to(room.roomId).emit('game:phase_change', {
     state: GameState.DISCUSSION,
     speakingOrder: room.game.speakingOrder,
@@ -448,7 +468,69 @@ function transitionToDiscussion(io, room) {
     hasVoted: false,
     revoteCount: room.game.revoteCount,
     accusedLiars: room.game.accusedLiars,
+    discussionEndTime,
   });
+
+  // 자동 토론 타이머
+  const timerId = setTimeout(() => {
+    if (room.state !== GameState.DISCUSSION) return;
+    // 토론 시간 종료 -> 연장 투표 시작
+    startExtendVote(io, room);
+  }, discussionTimeLimit * 1000);
+  setTimer(room.roomId + '_discussion', timerId);
+}
+
+function startExtendVote(io, room) {
+  if (room.state !== GameState.DISCUSSION) return;
+  room.game.extendVoteActive = true;
+  room.game.extendVotes = new Map();
+
+  io.to(room.roomId).emit('game:extend_vote_start', {
+    timeLimit: 30, // 30초 내에 투표
+    extendVoteEndTime: Date.now() + 30000,
+  });
+
+  // 30초 후 자동 결정
+  const timerId = setTimeout(() => {
+    if (room.state === GameState.DISCUSSION && room.game && room.game.extendVoteActive) {
+      resolveExtendVote(io, room);
+    }
+  }, 30000);
+  setTimer(room.roomId + '_extend', timerId);
+}
+
+function resolveExtendVote(io, room) {
+  if (!room.game || !room.game.extendVoteActive) return;
+  clearTimer(room.roomId + '_extend');
+  room.game.extendVoteActive = false;
+
+  const { extendCount, voteCount, extend } = tallyExtendVotes(room);
+
+  io.to(room.roomId).emit('game:extend_vote_result', {
+    extendCount,
+    voteCount,
+    extend,
+  });
+
+  if (extend) {
+    // 토론 2분 연장
+    const extraTime = 120;
+    const discussionEndTime = Date.now() + extraTime * 1000;
+    room.game.discussionEndTime = discussionEndTime;
+    room.game.extendVotes = new Map();
+
+    io.to(room.roomId).emit('game:discussion_extended', { discussionEndTime });
+
+    const timerId = setTimeout(() => {
+      if (room.state !== GameState.DISCUSSION) return;
+      startExtendVote(io, room);
+    }, extraTime * 1000);
+    setTimer(room.roomId + '_discussion', timerId);
+  } else {
+    // 투표 시작
+    clearTimer(room.roomId + '_discussion');
+    transitionToVoting(io, room);
+  }
 }
 
 function transitionToVoting(io, room) {
@@ -493,6 +575,7 @@ function endVoting(io, room) {
       tally: result.tally,
       topTargets: result.topTargets,
       revoteCount: room.game.revoteCount,
+      players: room.players.map(p => ({ userId: p.userId, nickname: p.nickname, avatar: p.avatar, color: p.color })),
     });
 
     if (canRevote) {
@@ -511,6 +594,7 @@ function endVoting(io, room) {
           liarWord: room.game.liarWord,
           accusedLiars: room.game.accusedLiars,
           votes: Object.fromEntries(room.game.votes),
+          players: room.players.map(p => ({ userId: p.userId, nickname: p.nickname, avatar: p.avatar, color: p.color })),
         });
         io.to('lobby').emit('lobby:room_updated', getRoomPublicInfo(room));
       }, 2000);
@@ -527,8 +611,11 @@ function endVoting(io, room) {
     result: 'decided',
     accusedId,
     accusedNickname: accusedPlayer?.nickname || '?',
+    accusedAvatar: accusedPlayer?.avatar || '❓',
+    accusedColor: accusedPlayer?.color || '#666',
     isLiar,
     tally,
+    players: room.players.map(p => ({ userId: p.userId, nickname: p.nickname, avatar: p.avatar, color: p.color })),
   });
 
   if (isLiar) {
@@ -559,6 +646,7 @@ function endVoting(io, room) {
           liarWord: room.game.liarWord,
           accusedLiars: room.game.accusedLiars,
           votes: Object.fromEntries(room.game.votes),
+          players: room.players.map(p => ({ userId: p.userId, nickname: p.nickname, avatar: p.avatar, color: p.color })),
         });
         io.to('lobby').emit('lobby:room_updated', getRoomPublicInfo(room));
       }, 30000);
@@ -578,6 +666,7 @@ function endVoting(io, room) {
         accusedLiars: room.game.accusedLiars,
         votes: Object.fromEntries(room.game.votes),
         tally,
+        players: room.players.map(p => ({ userId: p.userId, nickname: p.nickname, avatar: p.avatar, color: p.color })),
       });
       io.to('lobby').emit('lobby:room_updated', getRoomPublicInfo(room));
     }, 2000);
@@ -697,6 +786,8 @@ function clearAllTimers(roomId) {
   clearTimer(roomId + '_vote');
   clearTimer(roomId + '_speak');
   clearTimer(roomId + '_guess');
+  clearTimer(roomId + '_discussion');
+  clearTimer(roomId + '_extend');
 }
 
 module.exports = { setupSocketHandlers, transitionToVoting };
