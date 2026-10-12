@@ -1,0 +1,12 @@
+
+.server-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: -8px;
+}
+
+.server-info code {
+  color: var(--accent-light);
+  font-family: monospace;
+}
