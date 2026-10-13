@@ -13,6 +13,25 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 16개 무작위 이모지 추출 함수 (현재 선택된 avatar가 있는 경우 포함되도록)
+  const getRandom16 = (current?: string) => {
+    const pool = [...AVATAR_OPTIONS];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    let selected16 = shuffled.slice(0, 16);
+    if (current && !selected16.includes(current)) {
+      selected16[0] = current;
+    }
+    return selected16;
+  };
+
+  const [displayedAvatars, setDisplayedAvatars] = useState<string[]>(() => {
+    return getRandom16(avatar);
+  });
+
+  const handleShuffleAvatars = () => {
+    setDisplayedAvatars(getRandom16(avatar));
+  };
+
   const handleJoin = () => {
     const trimmed = nickname.trim();
     if (!trimmed) { setError('닉네임을 입력해주세요.'); return; }
@@ -72,20 +91,35 @@ export default function ProfilePage() {
         <h2 className="profile-card-title">프로필 설정</h2>
 
         {/* 아바타 선택 */}
-        <div className="avatar-section">
-          <div className="avatar-preview" style={{ background: color }}>
-            {avatar}
+        <div className="avatar-section-wrapper">
+          <div className="avatar-header-row">
+            <span className="input-label">인물 인장 (이모지 선택)</span>
+            <button
+              type="button"
+              className="btn-shuffle-avatar"
+              onClick={handleShuffleAvatars}
+              title="16개 이모지 새로고침"
+            >
+              🎲 무작위 16개 변경
+            </button>
           </div>
-          <div className="avatar-grid">
-            {AVATAR_OPTIONS.map(a => (
-              <button
-                key={a}
-                className={`avatar-btn ${avatar === a ? 'selected' : ''}`}
-                onClick={() => setAvatar(a)}
-              >
-                {a}
-              </button>
-            ))}
+          <div className="avatar-section">
+            <div className="avatar-preview" style={{ background: color }}>
+              {avatar}
+            </div>
+            <div className="avatar-grid-16">
+              {displayedAvatars.map((a, idx) => (
+                <button
+                  key={`${a}-${idx}`}
+                  type="button"
+                  className={`avatar-btn ${avatar === a ? 'selected' : ''}`}
+                  onClick={() => setAvatar(a)}
+                  title={`이모지 선택: ${a}`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -133,7 +167,7 @@ export default function ProfilePage() {
 
         <div className="server-info">
           <span>서버: </span>
-          <code>{import.meta.env.VITE_SERVER_URL || 'http://localhost:3001'}</code>
+          <code>{import.meta.env.VITE_SERVER_URL || (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com') ? 'https://liarrrrgame.onrender.com' : 'http://localhost:3001')}</code>
         </div>
       </div>
 
