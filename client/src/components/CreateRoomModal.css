@@ -30,11 +30,16 @@
   transition: all var(--transition);
 }
 
-.toggle-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+.toggle-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-primary);
+  background: #332b23;
+}
 .toggle-btn.active {
-  background: rgba(99,102,241,0.2);
+  background: rgba(139, 38, 29, 0.25);
   border-color: var(--accent);
-  color: var(--accent-light);
+  color: #ffb4a8;
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .mode-desc {
@@ -44,19 +49,59 @@
   padding: 8px 10px;
   background: var(--bg-input);
   border-radius: var(--radius-sm);
-  border-left: 2px solid var(--accent);
+  border-left: 2px solid var(--accent-gold);
 }
 
 .mode-warn {
-  color: var(--warning);
+  color: #ffd699;
   font-size: 11px;
+}
+
+/* ── 커스텀 단어 관리 영역 ── */
+.custom-words-group {
+  background: rgba(0,0,0,0.2);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-light);
+  gap: 10px;
+}
+
+.custom-word-add-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .custom-words-preview {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.custom-words-details {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.custom-words-summary {
+  cursor: pointer;
+  color: var(--accent-gold);
+  font-family: var(--font-typewriter);
+  font-size: 11.5px;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.custom-textarea {
   margin-top: 6px;
+  font-family: var(--font-typewriter);
+  font-size: 13px !important;
 }
 
 .modal-actions {
@@ -79,5 +124,5 @@ input[type="range"].input {
   background: transparent;
   cursor: pointer;
   height: 4px;
-  accent-color: var(--accent);
+  accent-color: var(--accent-gold);
 }
