@@ -1,10 +1,97 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { getSocket } from '../utils/socket';
 import { useGameStore } from '../store/gameStore';
 import { useCountdown } from '../hooks/useCountdown';
-import type { Player, GameResult } from '../types';
+import type { Player, GameResult, ChatMessage, Speech, SecretInfo } from '../types';
 import toast from 'react-hot-toast';
 import './GamePage.css';
+
+// ── 제시어 표시 컴포넌트 (깜빡임 방지를 위해 외부 분리) ──
+const WordBadge = React.memo(function WordBadge({ secretInfo }: { secretInfo: SecretInfo | null }) {
+  if (!secretInfo) return <div className="word-badge loading">🔍 제시어 로딩 중...</div>;
+  if (secretInfo.word) {
+    return (
+      <div className="word-badge keyword-badge">
+        <span className="badge-tag">🔑 제시어</span>
+        <strong className="badge-word">{secretInfo.word}</strong>
+      </div>
+    );
+  }
+  return (
+    <div className="word-badge liar-badge">
+      🎭 <strong>라이어</strong> · 제시어를 모릅니다!
+    </div>
+  );
+});
+
+// ── 발언 목록 컴포넌트 (깜빡임 방지를 위해 외부 분리) ──
+const SpeechesList = React.memo(function SpeechesList({
+  speeches,
+  players,
+  myUserId,
+}: {
+  speeches?: Speech[];
+  players?: Player[];
+  myUserId?: string;
+}) {
+  const getPlayer = (id: string) => players?.find(p => p.userId === id);
+  return (
+    <div className="speeches-list">
+      {(!speeches || speeches.length === 0) ? (
+        <div className="empty-hint">아직 발언이 없습니다.</div>
+      ) : (
+        speeches.map((sp, i) => {
+          const p = getPlayer(sp.userId);
+          return (
+            <div key={`${sp.userId}-${i}`} className={`speech-item ${sp.userId === myUserId ? 'mine' : ''}`}>
+              <div className="speech-avatar" style={{ background: p?.color || sp.color }}>
+                {sp.avatar}
+              </div>
+              <div className="speech-bubble">
+                <div className="speech-name">{sp.nickname}</div>
+                <div className={`speech-text ${sp.timedOut ? 'timed-out' : ''}`}>{sp.text}</div>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+});
+
+// ── 채팅 메시지 컴포넌트 (리렌더링 시 깜빡임 방지 & 하단 정렬) ──
+const ChatMessages = React.memo(function ChatMessages({
+  messages,
+  myUserId,
+  chatEndRef,
+}: {
+  messages: ChatMessage[];
+  myUserId?: string;
+  chatEndRef: React.RefObject<HTMLDivElement>;
+}) {
+  return (
+    <div className="chat-messages scroll-area">
+      <div className="chat-spacer" />
+      {messages.length === 0 && <div className="empty-hint">채팅을 시작해보세요!</div>}
+      {messages.map(msg => (
+        <div key={msg.id} className={`chat-msg ${msg.type === 'system' ? 'system' : msg.userId === myUserId ? 'mine' : ''}`}>
+          {msg.type === 'system' ? (
+            <span className="sys-text">{msg.text}</span>
+          ) : (
+            <>
+              <div className="msg-ava" style={{ background: msg.color }}>{msg.avatar}</div>
+              <div className="msg-body">
+                <div className="msg-name">{msg.nickname}</div>
+                <div className="msg-text">{msg.text}</div>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+      <div ref={chatEndRef} />
+    </div>
+  );
+});
 
 export default function GamePage() {
   const { user, room, secretInfo, gameResult, setRoom, setPage, setSecretInfo, setGameResult } = useGameStore();
@@ -131,72 +218,9 @@ export default function GamePage() {
   };
 
   const canChat = !['VOTING', 'ROLE_ASSIGNMENT'].includes(state);
-  const chatMessages = room?.messages.filter(m => m.type === 'chat' || m.type === 'system') || [];
-
-  // 제시어 표시 컴포넌트
-  const WordBadge = () => {
-    if (!secretInfo) return <div className="word-badge loading">🔍 제시어 로딩 중...</div>;
-    // 제시어가 있는 경우 (바보 모드 전원 및 일반 모드 시민) - 역할(시민/라이어) 노출 없이 오직 제시어만 표시!
-    if (secretInfo.word) {
-      return (
-        <div className="word-badge keyword-badge">
-          <span className="badge-tag">🔑 제시어</span>
-          <strong className="badge-word">{secretInfo.word}</strong>
-        </div>
-      );
-    }
-    // 일반 모드에서 제시어가 없는 라이어
-    return (
-      <div className="word-badge liar-badge">
-        🎭 <strong>라이어</strong> · 제시어를 모릅니다!
-      </div>
-    );
-  };
-
-  // 발언 목록 컴포넌트
-  const SpeechesList = () => (
-    <div className="speeches-list">
-      {(!game?.speeches || game.speeches.length === 0) ? (
-        <div className="empty-hint">아직 발언이 없습니다.</div>
-      ) : (
-        game.speeches.map((sp, i) => {
-          const p = getPlayer(sp.userId);
-          return (
-            <div key={i} className={`speech-item ${sp.userId === user?.userId ? 'mine' : ''}`}>
-              <div className="speech-avatar" style={{ background: p?.color || sp.color }}>
-                {sp.avatar}
-              </div>
-              <div className="speech-bubble">
-                <div className="speech-name">{sp.nickname}</div>
-                <div className={`speech-text ${sp.timedOut ? 'timed-out' : ''}`}>{sp.text}</div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </div>
-  );
-
-  // 채팅 메시지 컴포넌트
-  const ChatMessages = () => (
-    <div className="chat-messages scroll-area" ref={chatEndRef}>
-      {chatMessages.length === 0 && <div className="empty-hint">채팅을 시작해보세요!</div>}
-      {chatMessages.map(msg => (
-        <div key={msg.id} className={`chat-msg ${msg.type === 'system' ? 'system' : msg.userId === user?.userId ? 'mine' : ''}`}>
-          {msg.type === 'system' ? (
-            <span className="sys-text">{msg.text}</span>
-          ) : (
-            <>
-              <div className="msg-ava" style={{ background: msg.color }}>{msg.avatar}</div>
-              <div className="msg-body">
-                <div className="msg-name">{msg.nickname}</div>
-                <div className="msg-text">{msg.text}</div>
-              </div>
-            </>
-          )}
-        </div>
-      ))}
-    </div>
+  const chatMessages = useMemo(
+    () => room?.messages.filter(m => m.type === 'chat' || m.type === 'system') || [],
+    [room?.messages]
   );
 
   if (!room) return null;
@@ -243,7 +267,7 @@ export default function GamePage() {
 
       {/* ── 모바일 제시어 배너 ── */}
       <div className="mobile-word-banner">
-        <WordBadge />
+        <WordBadge secretInfo={secretInfo} />
       </div>
 
       {/* ── 본문 ── */}
@@ -273,12 +297,12 @@ export default function GamePage() {
           })}
           {/* 데스크탑 제시어 */}
           <div className="desktop-word-panel">
-            <WordBadge />
+            <WordBadge secretInfo={secretInfo} />
           </div>
         </div>
 
         {/* 중앙 메인 */}
-        <div className="gp-main">
+        <div className={`gp-main state-${state.toLowerCase()}`}>
 
           {/* ── 게임 탭 ── */}
           <div className="tab-panel tab-game">
@@ -371,7 +395,9 @@ export default function GamePage() {
                 <button className="speeches-toggle" onClick={() => setShowSpeeches(v => !v)}>
                   📋 발언 내역 {showSpeeches ? '숨기기 ▲' : '보기 ▼'} ({game?.speeches.length || 0}개)
                 </button>
-                <div className={`speeches-inline${showSpeeches ? ' open' : ''}`}><SpeechesList /></div>
+                <div className={`speeches-inline${showSpeeches ? ' open' : ''}`}>
+                  <SpeechesList speeches={game?.speeches} players={room?.players} myUserId={user?.userId} />
+                </div>
 
                 {/* 빠른 투표 */}
                 <div className="quick-vote-box">
@@ -548,7 +574,7 @@ export default function GamePage() {
           </div>
 
           {/* ── 채팅 메시지 (항상 표시) ── */}
-          <ChatMessages />
+          <ChatMessages messages={chatMessages} myUserId={user?.userId} chatEndRef={chatEndRef} />
 
           {/* 채팅 입력 (항상 하단) */}
           {canChat && (
