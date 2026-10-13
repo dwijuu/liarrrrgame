@@ -6,11 +6,8 @@ import type { Player, GameResult } from '../types';
 import toast from 'react-hot-toast';
 import './GamePage.css';
 
-type TabType = 'game' | 'speeches' | 'chat';
-
 export default function GamePage() {
   const { user, room, secretInfo, gameResult, setRoom, setPage, setSecretInfo, setGameResult } = useGameStore();
-  const [activeTab, setActiveTab] = useState<TabType>('game');
   const [chatInput, setChatInput] = useState('');
   const [speakInput, setSpeakInput] = useState('');
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
@@ -48,7 +45,6 @@ export default function GamePage() {
     setVoteSubmitted(false); setQuickVoted(false);
     setDefenseSubmitted(false); setElimChoice(null); setElimSubmitted(false);
     setGuessSubmitted(false); setSelectedVote(null);
-    if (state === 'SPEAKING' || state === 'ROLE_ASSIGNMENT') setActiveTab('game');
   }, [state]);
 
   useEffect(() => {
@@ -282,19 +278,7 @@ export default function GamePage() {
         </div>
 
         {/* 중앙 메인 */}
-        <div className={`gp-main tab-${activeTab}`}>
-          {/* 모바일 탭 바 */}
-          <div className="mob-tabs">
-            {(['game', 'speeches', 'chat'] as TabType[]).map(t => (
-              <button
-                key={t}
-                className={`mob-tab ${activeTab === t ? 'active' : ''}`}
-                onClick={() => setActiveTab(t)}
-              >
-                {t === 'game' ? '🎮 게임' : t === 'speeches' ? '📋 발언' : '💬 채팅'}
-              </button>
-            ))}
-          </div>
+        <div className="gp-main">
 
           {/* ── 게임 탭 ── */}
           <div className="tab-panel tab-game">
@@ -383,11 +367,11 @@ export default function GamePage() {
                   )}
                 </div>
 
-                {/* 발언 내역 토글 (데스크탑) */}
+                {/* 발언 내역 토글 */}
                 <button className="speeches-toggle" onClick={() => setShowSpeeches(v => !v)}>
                   📋 발언 내역 {showSpeeches ? '숨기기 ▲' : '보기 ▼'} ({game?.speeches.length || 0}개)
                 </button>
-                {showSpeeches && <div className="speeches-inline"><SpeechesList /></div>}
+                <div className={`speeches-inline${showSpeeches ? ' open' : ''}`}><SpeechesList /></div>
 
                 {/* 빠른 투표 */}
                 <div className="quick-vote-box">
@@ -563,16 +547,8 @@ export default function GamePage() {
             )}
           </div>
 
-          {/* ── 발언 탭 ── */}
-          <div className="tab-panel tab-speeches">
-            <div className="tab-panel-title">📋 발언 내역 ({game?.speeches?.length || 0}개)</div>
-            <SpeechesList />
-          </div>
-
-          {/* ── 채팅 탭 ── */}
-          <div className="tab-panel tab-chat">
-            <ChatMessages />
-          </div>
+          {/* ── 채팅 메시지 (항상 표시) ── */}
+          <ChatMessages />
 
           {/* 채팅 입력 (항상 하단) */}
           {canChat && (
