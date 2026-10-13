@@ -3,8 +3,10 @@ import { getSocket } from '../utils/socket';
 import { useGameStore } from '../store/gameStore';
 import type { Room } from '../types';
 import { TOPICS, TOPIC_LABELS } from '../types';
+import { getSavedCustomWords, saveCustomWords, addCustomWord, deleteCustomWord } from '../utils/customWordsStorage';
 import toast from 'react-hot-toast';
 import './RoomPage.css';
+
 
 export default function RoomPage() {
   const { user, room, setRoom, setPage, setSecretInfo, setGameResult } = useGameStore();
@@ -206,13 +208,57 @@ function SettingsModal({ room, onClose }: { room: Room; onClose: () => void }) {
   const [voteTimeLimit, setVoteTimeLimit] = useState(room.voteTimeLimit);
   const [speakTimeLimit, setSpeakTimeLimit] = useState(room.speakTimeLimit);
   const [tieRule, setTieRule] = useState(room.tieRule);
-  const [customWords, setCustomWords] = useState((room.customWords || []).join('\n'));
+  const [savedWords, setSavedWords] = useState<string[]>(() => {
+    const fromRoom = room.customWords || [];
+    const fromStorage = getSavedCustomWords();
+    const merged = Array.from(new Set([...fromStorage, ...fromRoom]));
+    if (merged.length > fromStorage.length) {
+      saveCustomWords(merged);
+    }
+    return merged;
+  });
+  const [newWordInput, setNewWordInput] = useState('');
+  const [customWords, setCustomWords] = useState(() => {
+    const fromRoom = room.customWords || [];
+    const fromStorage = getSavedCustomWords();
+    const merged = Array.from(new Set([...fromStorage, ...fromRoom]));
+    return merged.join('\n');
+  });
   const [loading, setLoading] = useState(false);
+
+  const handleCustomWordsTextChange = (text: string) => {
+    setCustomWords(text);
+    const parsed = text.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+    const unique = [...new Set(parsed)];
+    setSavedWords(unique);
+    saveCustomWords(unique);
+  };
+
+  const handleAddSingleWord = () => {
+    const trimmed = newWordInput.trim();
+    if (!trimmed) return;
+    if (savedWords.includes(trimmed)) {
+      toast.error('이미 존재하는 단어입니다.');
+      return;
+    }
+    const updated = addCustomWord(trimmed);
+    setSavedWords(updated);
+    setCustomWords(updated.join('\n'));
+    setNewWordInput('');
+  };
+
+  const handleDeleteWord = (word: string) => {
+    const updated = deleteCustomWord(word);
+    setSavedWords(updated);
+    setCustomWords(updated.join('\n'));
+  };
 
   const handleSave = () => {
     setLoading(true);
     const socket = getSocket();
     const parsedCustom = customWords.split('\n').map(w => w.trim()).filter(w => w);
+    const unique = [...new Set(parsedCustom)];
+    saveCustomWords(unique);
     socket.emit('room:update_settings', {
       name: name.trim(),
       gameMode,
@@ -222,7 +268,7 @@ function SettingsModal({ room, onClose }: { room: Room; onClose: () => void }) {
       voteTimeLimit,
       speakTimeLimit,
       tieRule,
-      customWords: [...new Set(parsedCustom)],
+      customWords: unique,
     }, (res: any) => {
       setLoading(false);
       if (res.error) { toast.error(res.error); return; }
@@ -261,11 +307,57 @@ function SettingsModal({ room, onClose }: { room: Room; onClose: () => void }) {
             </select>
           </div>
           {topic === '커스텀' && (
-            <div className="input-group">
-              <label className="input-label">커스텀 제시어 (한 줄에 하나)</label>
-              <textarea className="input" rows={4} value={customWords} onChange={e => setCustomWords(e.target.value)} />
+            <div className="input-group custom-words-group">
+              <label className="input-label">📂 보관된 커스텀 제시어 (자동 저장됨)</label>
+              <div className="custom-word-add-bar">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="새 단어 입력 후 추가"
+                  value={newWordInput}
+                  onChange={e => setNewWordInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSingleWord();
+                    }
+                  }}
+                  maxLength={20}
+                />
+                <button type="button" className="btn btn-secondary btn-sm" onClick={handleAddSingleWord}>
+                  + 단어 추가
+                </button>
+              </div>
+              {savedWords.length > 0 && (
+                <div className="custom-words-preview">
+                  {savedWords.map(w => (
+                    <span key={w} className="tag custom-tag">
+                      <span className="tag-text">{w}</span>
+                      <button
+                        type="button"
+                        className="tag-delete-btn"
+                        onClick={() => handleDeleteWord(w)}
+                        title="단어 삭제"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <details className="custom-words-details">
+                <summary className="custom-words-summary">📝 텍스트로 일괄 편집</summary>
+                <textarea
+                  className="input custom-textarea"
+                  rows={4}
+                  value={customWords}
+                  onChange={e => handleCustomWordsTextChange(e.target.value)}
+                  placeholder={'사과\n파인애플\n수박\n...'}
+                />
+              </details>
             </div>
           )}
+
           <div className="input-group">
             <label className="input-label">라이어 수: {liarCount}명</label>
             <input className="input" type="range" min={1} max={5} value={liarCount} onChange={e => setLiarCount(Number(e.target.value))} />
