@@ -1,5 +1,6 @@
 /* ============================================================
-   라이어 게임 전역 스타일
+   라이어 게임 전역 스타일  –  탐정의 수사 기록 & 사건 파일 테마
+   (Detective Dossier & Secret Case File Theme)
    ============================================================ */
 
 *, *::before, *::after {
@@ -9,31 +10,57 @@
 }
 
 :root {
-  --bg-dark: #0f0f1a;
-  --bg-card: #1a1a2e;
-  --bg-card2: #16213e;
-  --bg-input: #0d1117;
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-light: #818cf8;
-  --success: #22c55e;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --border: #2d2d4e;
-  --border-light: #3d3d6e;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  /* 배경 계열: 짙은 차콜, 흑갈색, 책상 위 어두운 서재 분위기 */
+  --bg-dark: #141210;
+  --bg-desk: #1a1614;
+  --bg-card: #201b17;
+  --bg-card2: #28221c;
+  --bg-paper: #ece4d0;        /* 낡은 수사 서류 / 서류철 종이색 */
+  --bg-paper-dark: #ded2b8;   /* 바랜 베이지 / 마닐라 폴더 */
+  --bg-input: #120f0d;
+  
+  /* 테마 컬러 & 강조: 낡은 붉은색 스탬프, 황동/빛바랜 금색, 타자기 잉크 */
+  --accent: #8b261d;          /* 사건 수사 기밀 도장 레드 */
+  --accent-hover: #a32f24;
+  --accent-light: #c25244;
+  --accent-gold: #c5a059;     /* 황동, 메탈 클립, 빈티지 뱃지 */
+  --accent-gold-hover: #d8b26a;
+  
+  --success: #3f7a4d;         /* 검증 통과 잉크 */
+  --danger: #9c2424;          /* 기밀 경고 / 처형 */
+  --warning: #b87a28;         /* 주의 요망 */
+  
+  /* 텍스트 색상: 종이와 어두운 배경 양쪽에서 높은 가독성 확보 */
+  --text-primary: #ede3d1;    /* 밝은 아이보리 / 타자기 양지 */
+  --text-secondary: #c2b69d;  /* 바랜 양피지 텍스트 */
+  --text-muted: #8c806d;      /* 연필 메모 / 빛바랜 주석 */
+  --text-on-paper: #221c17;   /* 서류 위 흑갈색 타자기 잉크 */
+  --text-stamp: #931e1e;      /* 극비 도장 색상 */
+  
+  /* 보더 & 질감 테두리 */
+  --border: #383027;
+  --border-light: #52473a;
+  --border-paper: #c2b496;
+  
+  --radius: 8px;
+  --radius-sm: 4px;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.65);
+  --shadow-paper: 0 4px 18px rgba(0, 0, 0, 0.35);
   --transition: 0.15s ease;
+  
+  /* 폰트 패밀리 */
+  --font-typewriter: 'Special Elite', 'Courier New', monospace;
+  --font-serif: 'Cinzel', 'Merriweather', 'Batang', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
 }
 
 html, body {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
-  background: var(--bg-dark);
+  font-family: var(--font-body);
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 50% 10%, rgba(197, 160, 89, 0.04) 0%, transparent 60%),
+    linear-gradient(rgba(20, 18, 16, 0.95), rgba(20, 18, 16, 0.95));
   color: var(--text-primary);
   line-height: 1.5;
   overflow: hidden;
@@ -45,21 +72,22 @@ html, body {
   flex-direction: column;
 }
 
-/* ── 스크롤바 ── */
+/* ── 빈티지 스크롤바 ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
 
-/* ── 버튼 ── */
+/* ── 탐정 수사 기록 버튼 ── */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 20px;
-  border: none;
+  padding: 9px 18px;
+  border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -67,63 +95,107 @@ html, body {
   white-space: nowrap;
   position: relative;
   overflow: hidden;
+  letter-spacing: 0.3px;
 }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
+/* 붉은 인장 스타일 (Primary) */
 .btn-primary {
   background: var(--accent);
-  color: white;
+  color: #fff1e5;
+  border-color: #5c1811;
+  box-shadow: 0 2px 6px rgba(139, 38, 29, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
 }
-.btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
-.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: #8b261d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(139, 38, 29, 0.5);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
 
+/* 사건 서류 스타일 (Secondary) */
 .btn-secondary {
   background: var(--bg-card2);
   color: var(--text-primary);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-light);
 }
-.btn-secondary:hover:not(:disabled) { background: var(--border); }
+.btn-secondary:hover:not(:disabled) {
+  background: #332b23;
+  border-color: var(--accent-gold);
+  color: #fff;
+}
 
+/* 기밀 말소 / 처형 (Danger) */
 .btn-danger {
   background: var(--danger);
-  color: white;
+  color: #fff;
+  border-color: #661414;
+  box-shadow: 0 2px 6px rgba(156, 36, 36, 0.35);
 }
-.btn-danger:hover:not(:disabled) { background: #dc2626; }
+.btn-danger:hover:not(:disabled) {
+  background: #b22c2c;
+  transform: translateY(-1px);
+}
 
+/* 검증 완료 (Success) */
 .btn-success {
   background: var(--success);
-  color: white;
+  color: #f1fbe9;
+  border-color: #274f31;
+  box-shadow: 0 2px 6px rgba(63, 122, 77, 0.35);
 }
-.btn-success:hover:not(:disabled) { background: #16a34a; }
+.btn-success:hover:not(:disabled) {
+  background: #4c925d;
+  transform: translateY(-1px);
+}
 
+/* 주의 / 빠른 투표 (Warning) */
+.btn-warning {
+  background: var(--warning);
+  color: #fff9ee;
+  border-color: #7d5218;
+}
+.btn-warning:hover:not(:disabled) {
+  background: #d48e30;
+}
+
+/* 고문서 고스트 버튼 */
 .btn-ghost {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.2);
   color: var(--text-secondary);
   border: 1px solid var(--border);
 }
-.btn-ghost:hover:not(:disabled) { background: var(--bg-card2); color: var(--text-primary); }
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-card2);
+  color: var(--text-primary);
+  border-color: var(--accent-gold);
+}
 
-.btn-sm { padding: 6px 14px; font-size: 13px; }
-.btn-lg { padding: 14px 28px; font-size: 16px; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-lg { padding: 13px 24px; font-size: 15px; font-weight: 700; }
 .btn-full { width: 100%; }
 
 /* 로딩 스피너 */
 .btn.loading::after {
   content: '';
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(237, 227, 209, 0.3);
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   margin-left: 8px;
 }
 
-/* ── 입력창 ── */
+/* ── 수사 기록 입력 필드 (Input) ── */
 .input {
   width: 100%;
   padding: 10px 14px;
@@ -132,10 +204,14 @@ html, body {
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 14px;
-  transition: border-color var(--transition);
+  transition: all var(--transition);
   outline: none;
 }
-.input:focus { border-color: var(--accent); }
+.input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.2);
+  background: #171310;
+}
 .input::placeholder { color: var(--text-muted); }
 .input:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -146,46 +222,71 @@ html, body {
 }
 
 .input-label {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .input-error {
   font-size: 12px;
-  color: var(--danger);
+  color: #ff7d7d;
 }
 
-/* ── 카드 ── */
+/* ── 사건 문서 카드 ── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
+  box-shadow: var(--shadow);
 }
 
-/* ── 배지 ── */
+/* ── 증거 분류 배지 (Stamp-like badges) ── */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  border-radius: 100px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
 }
-.badge-purple { background: rgba(99,102,241,0.2); color: var(--accent-light); }
-.badge-green { background: rgba(34,197,94,0.2); color: #4ade80; }
-.badge-red { background: rgba(239,68,68,0.2); color: #f87171; }
-.badge-yellow { background: rgba(234,179,8,0.2); color: #fbbf24; }
-.badge-gray { background: rgba(100,116,139,0.2); color: var(--text-muted); }
+.badge-purple {
+  background: rgba(197, 160, 89, 0.15);
+  color: var(--accent-gold);
+  border-color: rgba(197, 160, 89, 0.35);
+}
+.badge-green {
+  background: rgba(63, 122, 77, 0.2);
+  color: #79cb8e;
+  border-color: rgba(63, 122, 77, 0.4);
+}
+.badge-red {
+  background: rgba(156, 36, 36, 0.2);
+  color: #fca5a5;
+  border-color: rgba(156, 36, 36, 0.4);
+}
+.badge-yellow {
+  background: rgba(184, 122, 40, 0.2);
+  color: #ffd699;
+  border-color: rgba(184, 122, 40, 0.4);
+}
+.badge-gray {
+  background: rgba(140, 128, 109, 0.15);
+  color: var(--text-muted);
+  border-color: rgba(140, 128, 109, 0.3);
+}
 
-/* ── 모달 오버레이 ── */
+/* ── 모달 오버레이 (사건 파일 열람) ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(10, 8, 7, 0.82);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,35 +296,52 @@ html, body {
 
 .modal {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-light);
   border-radius: var(--radius);
-  padding: 28px;
+  padding: 26px;
   width: 100%;
-  max-width: 480px;
+  max-width: 490px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.8), 0 0 0 1px rgba(197,160,89,0.15);
+  position: relative;
+}
+
+/* 모달 상단 기밀 탭 장식 */
+.modal::before {
+  content: 'CONFIDENTIAL // CASE DOSSIER';
+  display: block;
+  font-family: var(--font-typewriter);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--accent-gold);
+  margin-bottom: 8px;
+  opacity: 0.85;
 }
 
 .modal-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 20px;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 18px;
   color: var(--text-primary);
+  border-bottom: 1px dashed var(--border-light);
+  padding-bottom: 8px;
+  letter-spacing: 0.5px;
 }
 
 /* ── 분리선 ── */
 .divider {
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 1px dashed var(--border);
   margin: 16px 0;
 }
 
 /* ── 애니메이션 ── */
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
 
 .fade-in { animation: fadeIn 0.2s ease; }
 .slide-in { animation: slideIn 0.2s ease; }
@@ -232,29 +350,43 @@ html, body {
 select.input {
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23c5a059' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
 }
 
-/* ── 태그 ── */
+/* ── 증거/단어 태그 ── */
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 4px 10px;
   background: var(--bg-card2);
-  border: 1px solid var(--border);
-  border-radius: 100px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
-/* ── 반응형 ── */
-@media (max-width: 768px) {
-  .modal { padding: 20px; }
-  .btn-lg { padding: 12px 20px; font-size: 15px; }
+.custom-tag {
+  background: #2a231c;
+  border: 1px solid #4a3e31;
+}
+
+.tag-delete-btn {
+  background: transparent;
+  border: none;
+  color: #ff9999;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+.tag-delete-btn:hover {
+  color: #ff4d4d;
 }
 
 /* ── 연결 상태 ── */
@@ -278,19 +410,21 @@ select.input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   background: var(--bg-card2);
   border: 1px solid var(--border);
-  border-radius: 100px;
-  font-size: 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-typewriter);
+  font-size: 15px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--accent-gold);
 }
 
 .timer.urgent {
-  background: rgba(239,68,68,0.15);
+  background: rgba(156, 36, 36, 0.2);
   border-color: var(--danger);
-  color: #f87171;
+  color: #ff7d7d;
   animation: pulse 1s infinite;
 }
 
@@ -303,30 +437,27 @@ select.input {
 
 /* ── 모바일 터치 최적화 ── */
 button, .btn, [role="button"] {
-  /* 모바일 탭 딜레이 제거 */
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
 input, textarea, select {
-  /* iOS Safari 입력창 스타일 초기화 */
   -webkit-appearance: none;
   appearance: none;
   border-radius: var(--radius-sm);
 }
 
-/* iOS 줌인 방지: 입력창 최소 16px */
 @media (max-width: 768px) {
   input, textarea, select {
     font-size: 16px !important;
   }
-
   .btn {
     min-height: 44px;
     min-width: 44px;
   }
-
   .btn-sm {
     min-height: 36px;
   }
+  .modal { padding: 20px; }
+  .btn-lg { padding: 12px 20px; font-size: 15px; }
 }
