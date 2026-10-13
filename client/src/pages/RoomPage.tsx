@@ -148,6 +148,7 @@ export default function RoomPage() {
       <div className="room-chat">
         <div className="chat-header">💬 대기실 채팅</div>
         <div className="chat-messages scroll-area">
+          <div className="chat-spacer" />
           {room.messages.length === 0 ? (
             <div className="chat-empty">채팅이 시작되면 여기에 표시됩니다.</div>
           ) : (
