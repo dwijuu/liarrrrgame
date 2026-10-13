@@ -170,21 +170,8 @@
   flex: 1;
 }
 
-/* ── 모바일 탭 바 ── */
-.mob-tabs {
-  display: none; /* 기본 숨김 */
-  flex-shrink: 0;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border);
-}
-.mob-tab {
-  flex: 1; padding: 10px 4px; font-size: 13px; font-weight: 600;
-  background: transparent; border: none; color: var(--text-muted);
-  cursor: pointer; border-bottom: 2px solid transparent;
-  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  transition: all .15s;
-}
-.mob-tab.active { color: var(--accent-light); border-bottom-color: var(--accent-light); }
+/* ── 모바일 탭 바 (사용 안 함 - 제거됨) ── */
+.mob-tabs { display: none; }
 
 /* ── 탭 패널 ── */
 .tab-panel {
@@ -199,11 +186,12 @@
 }
 .tab-panel-title { font-size: 14px; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; }
 
-/* 데스크탑: 게임탭만 보임, 발언/채팅탭 숨김 */
-.tab-speeches, .tab-chat { display: none; }
+/* 게임 탭은 항상 표시 */
 .tab-game { display: flex; }
+/* 발언/채팅 탭은 완전히 제거됨 */
+.tab-speeches, .tab-chat { display: none; }
 
-/* 채팅 메시지 (데스크탑: 하단 고정 영역) */
+/* 채팅 메시지 (항상 표시, 하단 고정) */
 .chat-messages {
   display: flex;
   flex-direction: column;
@@ -244,7 +232,7 @@
 
 /* ── 발언 목록 ── */
 .speeches-list { display: flex; flex-direction: column; gap: 10px; }
-.speech-item { display: flex; gap: 8px; align-items: flex-start; animation: slideIn .2s ease; }
+.speech-item { display: flex; gap: 8px; align-items: flex-start; }
 .speech-item.mine { flex-direction: row-reverse; }
 .speech-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
 .speech-bubble { max-width: 78%; }
@@ -309,7 +297,21 @@
 .disc-timer.urgent { color: var(--danger); animation: pulse 1s infinite; }
 .speeches-toggle { background: var(--bg-card2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .speeches-toggle:hover { background: var(--border); color: var(--text-primary); }
-.speeches-inline { max-height: 200px; overflow-y: auto; background: var(--bg-card2); border-radius: var(--radius-sm); padding: 10px; }
+
+/* speeches-inline: CSS max-height 전환으로 깜빡임 없앰 */
+.speeches-inline {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease-out, padding 0.25s ease-out;
+  background: var(--bg-card2);
+  border-radius: var(--radius-sm);
+}
+.speeches-inline.open {
+  max-height: 400px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
 .quick-vote-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; flex-shrink: 0; }
 .quick-vote-box p { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
 .quick-vote-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -412,31 +414,21 @@
   /* 제시어 배너 표시 */
   .mobile-word-banner { display: block; }
 
-  /* 탭 바 표시 */
-  .mob-tabs { display: flex; }
+  /* 게임 탭 항상 표시 */
+  .tab-panel { display: flex; padding: 12px; }
 
-  /* 탭 내용: active tab만 표시 */
-  .tab-panel { display: none; padding: 12px; }
-  .tab-game.tab-panel { display: flex; }  /* 기본은 game */
-
-  .gp-main.tab-game .tab-game { display: flex; }
-  .gp-main.tab-game .tab-speeches,
-  .gp-main.tab-game .tab-chat { display: none; }
-
-  .gp-main.tab-speeches .tab-speeches { display: flex; }
-  .gp-main.tab-speeches .tab-game,
-  .gp-main.tab-speeches .tab-chat { display: none; }
-
-  .gp-main.tab-chat .tab-chat { display: flex; flex-direction: column; }
-  .gp-main.tab-chat .tab-game,
-  .gp-main.tab-chat .tab-speeches { display: none; }
-
-  /* 데스크탑 채팅 박스 숨김 (탭으로 대체) */
-  .chat-messages { display: none; }
+  /* 채팅 메시지 모바일에서도 표시 */
+  .chat-messages {
+    max-height: 140px;
+    min-height: 50px;
+  }
 
   /* 입력창 항상 하단 */
   .chat-input-area { padding: 8px 10px; }
   .chat-inp { font-size: 16px !important; }
+
+  /* speeches-inline 모바일 최대 높이 조정 */
+  .speeches-inline.open { max-height: 240px; }
 
   /* 타이머 작게 */
   .timer-badge { font-size: 14px; }
