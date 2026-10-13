@@ -191,19 +191,36 @@
 /* 발언/채팅 탭은 완전히 제거됨 */
 .tab-speeches, .tab-chat { display: none; }
 
-/* 채팅 메시지 (항상 표시, 하단 고정) */
+.chat-spacer {
+  flex: 1 1 auto;
+}
+
+/* 채팅 메시지 (기본 하단 영역) */
 .chat-messages {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 10px 14px;
   overflow-y: auto;
-  max-height: 180px;
-  min-height: 60px;
+  max-height: 240px;
+  min-height: 80px;
   border-top: 1px solid var(--border);
   background: var(--bg-card);
   flex-shrink: 0;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ── 자유 토론 단계: 빠른 투표 아래 공백을 없애고 채팅창을 위로 꽉 채움 ── */
+.gp-main.state-discussion .tab-game {
+  flex: initial;
+  flex-shrink: 0;
+  padding-bottom: 8px;
+}
+
+.gp-main.state-discussion .chat-messages {
+  flex: 1;
+  max-height: none;
+  min-height: 200px;
 }
 
 /* ── 채팅 입력 ── */
@@ -419,8 +436,21 @@
 
   /* 채팅 메시지 모바일에서도 표시 */
   .chat-messages {
-    max-height: 140px;
-    min-height: 50px;
+    max-height: 160px;
+    min-height: 60px;
+  }
+
+  /* 자유 토론 단계 모바일: 공백 제거 및 채팅창을 위로 확장 */
+  .gp-main.state-discussion .tab-game {
+    flex: initial;
+    flex-shrink: 0;
+    padding: 10px 12px 6px;
+  }
+
+  .gp-main.state-discussion .chat-messages {
+    flex: 1;
+    max-height: none;
+    min-height: 160px;
   }
 
   /* 입력창 항상 하단 */
