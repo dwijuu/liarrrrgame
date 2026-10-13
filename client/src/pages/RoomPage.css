@@ -1,52 +1,60 @@
 .room-page {
   height: 100vh;
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 310px 1fr;
   overflow: hidden;
+  background: var(--bg-dark);
 }
 
-/* 사이드바 */
+/* 사이드바 (사건 수사본부 인물철) */
 .room-sidebar {
   background: var(--bg-card);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   gap: 0;
   overflow: hidden;
+  position: relative;
+  box-shadow: 2px 0 16px rgba(0,0,0,0.4);
 }
 
 .room-info {
   padding: 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px dashed var(--border-light);
   flex-shrink: 0;
+  background: rgba(0,0,0,0.15);
 }
 
 .room-info-name {
+  font-family: var(--font-serif);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 6px;
+  letter-spacing: 0.5px;
 }
 
 .room-info-id {
+  font-family: var(--font-typewriter);
   font-size: 12px;
   color: var(--text-muted);
 }
 
 .room-info-id strong {
-  color: var(--accent-light);
-  font-family: monospace;
+  color: var(--accent-gold);
   letter-spacing: 2px;
+  font-size: 13px;
 }
 
 /* 참가자 섹션 */
 .players-section {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 14px;
+  min-height: 0;
 }
 
 .section-header {
@@ -57,25 +65,28 @@
 }
 
 .section-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-family: var(--font-typewriter);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .player-count {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-family: var(--font-typewriter);
+  font-size: 11px;
+  color: var(--accent-gold);
   background: var(--bg-card2);
   padding: 2px 8px;
-  border-radius: 100px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
 }
 
 .players-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .player-item {
@@ -85,28 +96,32 @@
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   background: var(--bg-card2);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   transition: all var(--transition);
 }
 
 .player-item.me {
-  border-color: var(--accent);
-  background: rgba(99,102,241,0.08);
+  border-color: var(--accent-gold);
+  background: #2e261e;
+  box-shadow: 0 0 0 1px rgba(197, 160, 89, 0.2);
 }
 
 .player-item.disconnected {
-  opacity: 0.4;
+  opacity: 0.45;
+  filter: grayscale(0.7);
 }
 
 .player-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
 }
 
 .player-info {
@@ -115,8 +130,8 @@
 }
 
 .player-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--text-primary);
   display: block;
   overflow: hidden;
@@ -131,14 +146,15 @@
   flex-wrap: wrap;
 }
 
-/* 게임 설정 표시 */
+/* 게임 수사 조건 설정 표시 */
 .game-settings-display {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+  border-top: 1px dashed var(--border-light);
   display: flex;
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
+  background: rgba(0,0,0,0.12);
 }
 
 .settings-row {
@@ -150,63 +166,86 @@
 
 .settings-row span:first-child {
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .settings-row span:last-child {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 600;
+  font-family: var(--font-body);
 }
 
 /* 액션 버튼 */
 .room-actions {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
+  background: var(--bg-card);
 }
 
 .waiting-info {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--accent-gold);
   text-align: center;
   padding: 8px;
-  background: var(--bg-card2);
+  background: rgba(197, 160, 89, 0.08);
+  border: 1px dashed var(--border-light);
   border-radius: var(--radius-sm);
 }
 
-/* 채팅 영역 */
+/* ══════════════════════════════════════════════════════════════
+   채팅 영역 – 상하 공간 100% 꽉 채우고 빈 공간 제거
+   ══════════════════════════════════════════════════════════════ */
 .room-chat {
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  min-height: 0;
   overflow: hidden;
-  background: var(--bg-dark);
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 70% 30%, rgba(197, 160, 89, 0.03) 0%, transparent 70%),
+    linear-gradient(rgba(20, 18, 16, 0.98), rgba(20, 18, 16, 0.98));
 }
 
 .chat-header {
-  padding: 14px 20px;
-  font-size: 14px;
+  padding: 12px 20px;
+  font-family: var(--font-typewriter);
+  font-size: 13px;
   font-weight: 700;
-  color: var(--text-secondary);
+  letter-spacing: 1px;
+  color: var(--accent-gold);
   border-bottom: 1px solid var(--border);
+  background: rgba(32, 27, 23, 0.7);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+/* 메시지 목록이 부모 높이 전체를 채움 */
 .chat-messages {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   overflow-y: auto;
-  padding: 16px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .chat-empty {
   text-align: center;
   color: var(--text-muted);
+  font-family: var(--font-typewriter);
   font-size: 13px;
-  padding: 20px;
+  padding: 30px 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  margin: auto 0;
 }
 
 .chat-msg {
@@ -225,30 +264,35 @@
 }
 
 .system-msg {
-  font-size: 12px;
-  color: var(--text-muted);
-  background: var(--bg-card2);
+  font-family: var(--font-typewriter);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: #251f1a;
+  border: 1px dashed var(--border);
   padding: 4px 12px;
-  border-radius: 100px;
+  border-radius: var(--radius-sm);
 }
 
 .msg-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .msg-content {
-  max-width: 70%;
+  max-width: 72%;
 }
 
 .msg-name {
   font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 3px;
 }
@@ -259,33 +303,39 @@
 
 .msg-text {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-primary);
   word-break: break-word;
-  line-height: 1.4;
+  line-height: 1.45;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
 }
 
 .chat-msg.mine .msg-text {
-  background: var(--accent);
+  background: #3c1e19;
   border-color: var(--accent);
-}
-
-.chat-input-row {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  color: #fff1e5;
 }
 
 .chat-spacer {
   flex: 1 1 auto;
 }
 
-/* 반응형 */
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   반응형 레이아웃
+   ══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .room-page {
     height: 100dvh;
@@ -351,7 +401,7 @@
 
   .player-item {
     padding: 4px 8px;
-    border-radius: 100px;
+    border-radius: var(--radius-sm);
     gap: 6px;
     flex-shrink: 0;
   }
@@ -368,7 +418,7 @@
   }
 
   .player-badges {
-    display: none; /* 모바일 아바타 캡슐에서는 공간 절약 */
+    display: none;
   }
 
   .game-settings-display {
@@ -382,7 +432,7 @@
     font-size: 11px;
     background: var(--bg-card2);
     border: 1px solid var(--border);
-    border-radius: 100px;
+    border-radius: var(--radius-sm);
     padding: 2px 7px;
     gap: 4px;
   }
@@ -425,7 +475,7 @@
   }
 
   .room-chat {
-    flex: 1;
+    flex: 1 1 0%;
     min-height: 0;
     height: 100%;
   }
