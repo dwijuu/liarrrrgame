@@ -281,15 +281,166 @@
   flex-shrink: 0;
 }
 
+.chat-spacer {
+  flex: 1 1 auto;
+}
+
 /* 반응형 */
 @media (max-width: 768px) {
   .room-page {
+    height: 100dvh;
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    overflow: hidden;
   }
+
   .room-sidebar {
     border-right: none;
     border-bottom: 1px solid var(--border);
-    max-height: 50vh;
+    max-height: 38vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .room-info {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .room-info-name {
+    font-size: 14px;
+    margin-bottom: 0;
+  }
+
+  .room-info-id {
+    font-size: 11px;
+  }
+
+  .players-section {
+    flex: initial;
+    padding: 4px 12px 6px;
+  }
+
+  .section-header {
+    margin-bottom: 4px;
+  }
+
+  .section-label {
+    font-size: 11px;
+  }
+
+  .player-count {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+
+  .players-list {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .players-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .player-item {
+    padding: 4px 8px;
+    border-radius: 100px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .player-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 13px;
+  }
+
+  .player-name {
+    font-size: 12px;
+    max-width: 68px;
+  }
+
+  .player-badges {
+    display: none; /* 모바일 아바타 캡슐에서는 공간 절약 */
+  }
+
+  .game-settings-display {
+    padding: 4px 12px 6px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+  }
+
+  .settings-row {
+    font-size: 11px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 2px 7px;
+    gap: 4px;
+  }
+
+  .room-sidebar .btn-ghost.btn-sm.btn-full {
+    margin: 2px 12px 4px;
+    width: calc(100% - 24px);
+    padding: 4px 8px;
+    min-height: 30px;
+    font-size: 12px;
+  }
+
+  .room-actions {
+    padding: 6px 12px 8px;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .room-actions .btn-lg {
+    flex: 2;
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .room-actions .waiting-info {
+    flex: 2;
+    padding: 6px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .room-actions .btn-danger {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .room-chat {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .chat-header {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .chat-messages {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .chat-input-row {
+    padding: 8px 10px;
   }
 }
